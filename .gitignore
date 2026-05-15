@@ -19,6 +19,8 @@ dist-ssr
 test-scale.js
 
 # Editor directories and files
+.roo/
+.roomodes
 .vscode/*
 !.vscode/extensions.json
 .idea
