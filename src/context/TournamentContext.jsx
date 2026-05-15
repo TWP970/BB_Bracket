@@ -1,5 +1,5 @@
 // context/TournamentContext.jsx
-import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { createPlayer } from '../lib/utils';
 import { generateSingleElimination, generateDoubleElimination, recordResult } from '../lib/bracket';
 import { generateRoundRobin, recordRRResult } from '../lib/roundrobin';
@@ -49,10 +49,13 @@ function reducer(state, action) {
   }
 }
 
+const MAX_UNDO = 20;
+
 export function TournamentProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const broadcast = useBroadcastSend();
   const roomCode  = getOrCreateRoomCode();
+  const undoStack = useRef([]);
 
   // Broadcast every tournament state change to spectator tabs / devices
   useEffect(() => {
@@ -130,6 +133,10 @@ export function TournamentProvider({ children }) {
   const submitScore = useCallback((matchId, score1, score2, extra = {}) => {
     const t = state.tournament;
     if (!t) return;
+
+    // Save current state for undo
+    undoStack.current = [...undoStack.current.slice(-(MAX_UNDO - 1)), JSON.parse(JSON.stringify(t))];
+
     let updated;
 
     switch (t.type) {
@@ -206,13 +213,26 @@ export function TournamentProvider({ children }) {
     }
   }, [state.tournament]);
 
+  const undoScore = useCallback(() => {
+    if (undoStack.current.length === 0) {
+      dispatch({ type: 'SHOW_TOAST', payload: { msg: '⚠️ 沒有可撤回的操作', kind: 'warning' } });
+      return;
+    }
+    const prev = undoStack.current.pop();
+    dispatch({ type: 'SET_TOURNAMENT', payload: prev });
+    dispatch({ type: 'SHOW_TOAST', payload: { msg: '↩️ 已撤回上一筆比分', kind: 'success' } });
+  }, []);
+
+  const canUndo = undoStack.current.length > 0;
+
   const reset = useCallback(() => {
+    undoStack.current = [];
     dispatch({ type: 'RESET' });
   }, []);
 
   return (
     <TournamentContext.Provider value={{
-      state, dispatch, generate, submitScore, nextSwissRound, advanceKnockout, reset, roomCode
+      state, dispatch, generate, submitScore, undoScore, canUndo, nextSwissRound, advanceKnockout, reset, roomCode
     }}>
       {children}
     </TournamentContext.Provider>

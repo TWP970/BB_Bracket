@@ -4,7 +4,7 @@ import { useTournament } from '../../context/TournamentContext';
 import { useReadOnly } from '../../context/ReadOnlyContext';
 
 export default function MatchCard({ match, extra = {}, bracketType = 'winners' }) {
-  const { submitScore } = useTournament();
+  const { submitScore, undoScore, canUndo } = useTournament();
   const readOnly = useReadOnly();
   const [s1, setS1] = useState('');
   const [s2, setS2] = useState('');
@@ -13,6 +13,7 @@ export default function MatchCard({ match, extra = {}, bracketType = 'winners' }
 
   const { player1: p1, player2: p2, isCompleted, isBye, winner, score1, score2 } = match;
   const canInput = !readOnly && !isCompleted && !isBye && p1 && !p1.isBye && p2 && !p2.isBye;
+  const canUndoThis = !readOnly && isCompleted && !isBye && canUndo;
 
   const handleConfirm = () => {
     const v1 = parseInt(s1, 10);
@@ -68,6 +69,10 @@ export default function MatchCard({ match, extra = {}, bracketType = 'winners' }
 
       {canInput && (
         <button className="confirm-btn" onClick={handleConfirm}>確認</button>
+      )}
+
+      {canUndoThis && (
+        <button className="undo-btn" onClick={undoScore} title="撤回上一筆比分">↩ 撤回</button>
       )}
     </div>
   );
