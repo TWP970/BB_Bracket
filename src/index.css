@@ -653,3 +653,105 @@ input, textarea, select { outline: none; }
 /* ── Share row ── */
 .share-row { display: flex; gap: 8px; align-items: center; }
 .share-row .btn-primary { flex: 1; }
+
+/* ── Header left group ── */
+.header-left { display: flex; align-items: center; gap: 10px; }
+
+/* ── Hamburger Button ── */
+.hamburger-btn {
+  display: none; /* hidden on desktop */
+  background: none; border: none; padding: 6px;
+  cursor: pointer; z-index: 110;
+}
+.hamburger-icon {
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 5px; width: 22px; height: 22px;
+}
+.hamburger-icon span {
+  display: block; height: 2px; width: 100%;
+  background: var(--text); border-radius: 2px;
+  transition: all 0.3s ease;
+}
+.hamburger-icon.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger-icon.open span:nth-child(2) { opacity: 0; }
+.hamburger-icon.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Sidebar backdrop (mobile) ── */
+.sidebar-backdrop {
+  display: none; /* hidden on desktop */
+}
+
+/* ── Mobile Responsive ── */
+@media (max-width: 768px) {
+  /* Show hamburger */
+  .hamburger-btn { display: flex; }
+
+  /* Hide header badges on mobile */
+  .header-badges { display: none; }
+
+  /* Header tweaks */
+  .app-header { padding: 0 12px; }
+  .logo-sub { display: none; }
+  .logo-text { font-size: 17px; }
+  .logo-icon { font-size: 20px; }
+  .share-btn-header { padding: 5px 10px; font-size: 12px; }
+
+  /* Sidebar as slide-over drawer */
+  .sidebar {
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: none;
+  }
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+  }
+
+  /* Backdrop */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: var(--header-h);
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    animation: fade-in 0.2s ease;
+  }
+
+  /* Main area takes full width */
+  .main-area { padding: 12px; }
+
+  /* Match card responsive */
+  .match-card { padding: 8px; }
+  .score-display { font-size: 14px; }
+  .player-name { font-size: 12px; }
+
+  /* Grouped RR single column */
+  .grouped-rr-view { grid-template-columns: 1fr; }
+  .ms-groups { grid-template-columns: 1fr; }
+
+  /* Share modal responsive */
+  .share-modal { width: 95vw; padding: 16px; }
+
+  /* Zoom controls wrap */
+  .zoom-controls { flex-wrap: wrap; }
+
+  /* Empty state responsive */
+  .empty-icon { font-size: 48px; }
+  .empty-title { font-size: 22px; }
+  .feature-pills { gap: 6px; }
+  .feature-pills span { font-size: 11px; padding: 4px 10px; }
+}
+
+@media (max-width: 480px) {
+  .sidebar { width: 85vw; }
+  .format-grid { grid-template-columns: 1fr; }
+  .count-selector { gap: 4px; }
+  .count-btn { padding: 3px 8px; font-size: 11px; }
+}

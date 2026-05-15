@@ -1,5 +1,5 @@
 // App.jsx
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTournament } from './context/TournamentContext';
 import Sidebar from './components/Sidebar/Sidebar';
 import BracketView from './components/Bracket/BracketView';
@@ -12,6 +12,10 @@ import Toast from './components/shared/Toast';
 
 // ── Detect spectator mode via URL ────────────────────────────
 const IS_SPECTATOR = new URLSearchParams(window.location.search).has('spectate');
+
+// ── Swipe gesture config ─────────────────────────────────────
+const SWIPE_THRESHOLD = 50;   // min px to count as swipe
+const EDGE_ZONE = 30;         // px from left edge to start swipe
 
 // ── Tournament area (host mode) ───────────────────────────────
 function TournamentArea() {
@@ -69,7 +73,42 @@ function TournamentArea() {
 // ── Main App ──────────────────────────────────────────────────
 export default function App() {
   const [showShare, setShowShare] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { state } = useTournament();
+  const touchRef = useRef({ startX: 0, startY: 0 });
+
+  // ── Swipe gesture handlers ─────────────────────────────────
+  const handleTouchStart = useCallback((e) => {
+    const t = e.touches[0];
+    touchRef.current = { startX: t.clientX, startY: t.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    const t = e.changedTouches[0];
+    const { startX, startY } = touchRef.current;
+    const dx = t.clientX - startX;
+    const dy = Math.abs(t.clientY - startY);
+
+    // Only trigger if horizontal movement > threshold and > vertical movement
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > dy) {
+      if (dx > 0 && startX < EDGE_ZONE && !sidebarOpen) {
+        // Swipe right from left edge → open
+        setSidebarOpen(true);
+      } else if (dx < 0 && sidebarOpen) {
+        // Swipe left while open → close
+        setSidebarOpen(false);
+      }
+    }
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleTouchStart, handleTouchEnd]);
 
   // ── Spectator mode ──────────────────────────────────────────
   if (IS_SPECTATOR) {
@@ -80,10 +119,21 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div className="header-logo">
-          <span className="logo-icon">🏆</span>
-          <span className="logo-text">BB Bracket</span>
-          <span className="logo-sub">賽程表產生器</span>
+        <div className="header-left">
+          <button
+            className="hamburger-btn"
+            onClick={() => setSidebarOpen(prev => !prev)}
+            aria-label="切換選單"
+          >
+            <span className={`hamburger-icon ${sidebarOpen ? 'open' : ''}`}>
+              <span /><span /><span />
+            </span>
+          </button>
+          <div className="header-logo">
+            <span className="logo-icon">🏆</span>
+            <span className="logo-text">BB Bracket</span>
+            <span className="logo-sub">賽程表產生器</span>
+          </div>
         </div>
         <div className="header-badges">
           <span className="header-badge">最多 1000 人</span>
@@ -103,7 +153,11 @@ export default function App() {
       </header>
 
       <div className="app-body">
-        <Sidebar />
+        {/* Mobile backdrop overlay */}
+        {sidebarOpen && (
+          <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
+        )}
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <main className="main-area">
           <TournamentArea />
         </main>

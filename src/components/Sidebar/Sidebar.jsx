@@ -14,7 +14,7 @@ const FORMATS = [
 const PLAYER_COUNTS = [2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 512, 1000];
 
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { state, dispatch, generate, reset } = useTournament();
   const { format, config, players } = state;
   const [rawText, setRawText] = useState('');
@@ -64,10 +64,11 @@ export default function Sidebar() {
     }
     dispatch({ type: 'SET_PLAYERS', payload: ps });
     generate(ps);
+    onClose?.();
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-inner">
         {/* Format Selection */}
         <section className="sidebar-section">

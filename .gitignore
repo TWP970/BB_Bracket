@@ -1,4 +1,4 @@
-# Logs
+# 日誌檔
 logs
 *.log
 npm-debug.log*
@@ -7,18 +7,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# 依賴與建構產物
 node_modules
 dist
 dist-ssr
+
+# 環境設定（含 Firebase 金鑰，不可上傳）
 *.local
 
-# Firebase
+# Firebase 快取
 .firebase/
 
-# Test files
+# 測試檔
 test-scale.js
 
-# Editor directories and files
+# 編輯器設定檔
 .roo/
 .roomodes
 .vscode/*
