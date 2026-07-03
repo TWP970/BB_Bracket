@@ -8,6 +8,7 @@ import SwissView from './components/Swiss/SwissView';
 import MultiStageView from './components/MultiStage/MultiStageView';
 import SpectatorView from './components/Spectator/SpectatorView';
 import ShareModal from './components/shared/ShareModal';
+import ScoreCounter from './components/shared/ScoreCounter';
 import Toast from './components/shared/Toast';
 
 // ── Detect spectator mode via URL ────────────────────────────
@@ -107,6 +108,7 @@ function TournamentArea() {
 // ── Main App ──────────────────────────────────────────────────
 export default function App() {
   const [showShare, setShowShare] = useState(false);
+  const [showCounter, setShowCounter] = useState(false);
   // Desktop starts expanded; phones (incl. landscape) start collapsed
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.innerWidth > 768 && window.innerHeight > 520
@@ -177,15 +179,24 @@ export default function App() {
           <span className="header-badge">5 種賽制</span>
           <span className="header-badge">即時更新</span>
         </div>
-        {/* Share button — only shown when a tournament is active */}
+        {/* Action buttons — only shown when a tournament is active */}
         {state.tournament && (
-          <button
-            className="share-btn-header"
-            onClick={() => setShowShare(true)}
-            title="分享即時觀戰連結"
-          >
-            📡 分享觀戰
-          </button>
+          <div className="header-actions">
+            <button
+              className="share-btn-header"
+              onClick={() => setShowCounter(true)}
+              title="開啟分數計數器"
+            >
+              🎯 計分器
+            </button>
+            <button
+              className="share-btn-header"
+              onClick={() => setShowShare(true)}
+              title="分享即時觀戰連結"
+            >
+              📡 分享觀戰
+            </button>
+          </div>
         )}
       </header>
 
@@ -206,6 +217,9 @@ export default function App() {
           tournament={state.tournament}
           onClose={() => setShowShare(false)}
         />
+      )}
+      {showCounter && (
+        <ScoreCounter onClose={() => setShowCounter(false)} />
       )}
     </div>
   );

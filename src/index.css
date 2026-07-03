@@ -484,6 +484,114 @@ input, textarea, select { outline: none; }
 .share-row { display: flex; gap: 8px; align-items: center; }
 .share-row .btn-primary { flex: 1; }
 
+/* ── Score Counter ── */
+.header-actions { display: flex; gap: 8px; }
+.counter-modal {
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg); padding: 20px;
+  width: 720px; max-width: 96vw;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(45,62,110,0.30), var(--inset-hi);
+  animation: pop-in 0.2s ease;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.counter-select { width: 100%; font-size: 14px; padding: 10px 12px; }
+.counter-empty {
+  text-align: center; padding: 40px 16px;
+  font-size: 14px; font-weight: 600; color: var(--text3);
+}
+.counter-arena { display: flex; align-items: stretch; gap: 10px; }
+.counter-vs {
+  align-self: center; flex-shrink: 0;
+  font-size: 18px; font-weight: 900; color: var(--text3);
+}
+.counter-side {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 16px 12px;
+  border-radius: var(--radius-lg);
+  border: 2px solid;
+  transition: all 0.2s;
+}
+.counter-side.p1 {
+  background: rgba(11,125,216,0.08);
+  border-color: rgba(11,125,216,0.35);
+}
+.counter-side.p2 {
+  background: rgba(217,56,44,0.07);
+  border-color: rgba(217,56,44,0.35);
+}
+.counter-side.won {
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  border-color: #66bb6a;
+}
+.counter-side-head {
+  display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;
+}
+.counter-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 26px; height: 24px; padding: 0 6px;
+  background: linear-gradient(135deg, var(--lime2), var(--lime));
+  color: #fff; font-size: 13px; font-weight: 900;
+  border-radius: 5px; text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  flex-shrink: 0;
+}
+.counter-name {
+  font-size: 16px; font-weight: 800; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.counter-score {
+  font-size: 64px; font-weight: 900; line-height: 1;
+  color: var(--text); font-variant-numeric: tabular-nums;
+}
+.counter-side.p1 .counter-score { color: var(--primary); }
+.counter-side.p2 .counter-score { color: var(--red); }
+.counter-side.won .counter-score { color: #2e7d32; }
+.counter-btns {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%;
+}
+.counter-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 8px 4px;
+  font-size: 16px; font-weight: 900;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(28,37,54,0.14);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: 0 1px 3px rgba(45,62,110,0.10);
+}
+.counter-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--lime); box-shadow: 0 3px 10px rgba(168,184,44,0.35); }
+.counter-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.counter-btn-sub { font-size: 10px; font-weight: 700; color: var(--text3); }
+.counter-minus {
+  width: 100%; padding: 6px;
+  font-size: 12px; font-weight: 700;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(180,117,10,0.35); border-radius: var(--radius);
+  color: var(--yellow); cursor: pointer; transition: all 0.15s;
+}
+.counter-minus:hover:not(:disabled) { background: rgba(180,117,10,0.10); }
+.counter-minus:disabled { opacity: 0.35; cursor: not-allowed; }
+.counter-hint { text-align: center; font-size: 12px; font-weight: 700; color: var(--text3); }
+.counter-result {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,152,0,0.12)), rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,193,7,0.5); border-radius: var(--radius-lg);
+}
+.counter-result-text { font-size: 15px; color: var(--text); }
+.counter-next-btn { max-width: 320px; }
+
+@media (max-width: 560px) {
+  .counter-score { font-size: 44px; }
+  .counter-name { font-size: 13px; }
+  .counter-btn { font-size: 14px; padding: 6px 2px; }
+  .counter-modal { padding: 14px; }
+}
+
 /* ── Room code box ── */
 .room-code-box {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
