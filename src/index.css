@@ -556,7 +556,7 @@ input, textarea, select { outline: none; }
 .counter-side.p2 .counter-score { color: var(--red); }
 .counter-side.won .counter-score { color: #2e7d32; }
 .counter-btns {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: 100%;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%;
 }
 .counter-btn {
   display: flex; flex-direction: column; align-items: center; gap: 1px;

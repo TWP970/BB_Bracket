@@ -9,7 +9,6 @@ const TARGET = 4; // first to 4 points wins (BEYBLADE X rule)
 
 const FINISHES = [
   { pts: 1, label: '旋轉' },
-  { pts: 2, label: '場外' },
   { pts: 2, label: '爆裂' },
   { pts: 3, label: '極限' },
 ];
