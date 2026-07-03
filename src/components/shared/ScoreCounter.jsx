@@ -8,7 +8,7 @@ import { useState, useMemo, useEffect } from 'react';
 const TARGET = 4; // first to 4 points wins (BEYBLADE X rule)
 
 const FINISHES = [
-  { pts: 1, label: '旋轉' },
+  { pts: 1, label: '轉停' },
   { pts: 2, label: '爆裂' },
   { pts: 3, label: '極限' },
 ];
