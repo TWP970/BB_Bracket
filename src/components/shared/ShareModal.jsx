@@ -1,5 +1,6 @@
 // components/shared/ShareModal.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { useTournament } from '../../context/TournamentContext';
 import { encodeState } from '../../hooks/useBroadcast';
 import { firebaseReady as fbReady } from '../../lib/firebase';
@@ -7,11 +8,22 @@ import { firebaseReady as fbReady } from '../../lib/firebase';
 export default function ShareModal({ tournament, onClose }) {
   const { roomCode } = useTournament();
   const [copied, setCopied] = useState('');
+  const [qrDataUrl, setQrDataUrl] = useState(null);
 
   const base      = window.location.origin + window.location.pathname;
   // Cross-device URL: room code only (Firebase) or snapshot (fallback)
   const liveUrl   = `${base}?spectate=1`;
   const roomUrl   = `${base}?spectate=1&room=${roomCode}`;
+
+  // QR code for the cross-device link (generated locally, no external service)
+  useEffect(() => {
+    if (!fbReady) return;
+    QRCode.toDataURL(roomUrl, {
+      width: 360,
+      margin: 2,
+      color: { dark: '#1c2536', light: '#ffffff' },
+    }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
+  }, [roomUrl]);
   const encoded   = encodeState(tournament);
   const snapUrl   = encoded ? `${base}?spectate=1&state=${encoded}` : null;
   const snapSize  = snapUrl?.length ?? 0;
@@ -79,6 +91,16 @@ export default function ShareModal({ tournament, onClose }) {
                 </button>
               </div>
               <div className="share-hint">🔴 LIVE — 每次比分更新後 &lt;500ms 全球同步</div>
+              {qrDataUrl && (
+                <div className="share-qr">
+                  <img
+                    className="share-qr-img"
+                    src={qrDataUrl}
+                    alt={`觀戰 QR Code（房間 ${roomCode}）`}
+                  />
+                  <div className="share-hint">📱 掃描 QR Code 直接進入觀戰</div>
+                </div>
+              )}
             </>
           ) : (
             <div className="share-warn">

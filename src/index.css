@@ -414,6 +414,7 @@ input, textarea, select { outline: none; }
   -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg); padding: 24px; width: 480px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto;
   box-shadow: 0 24px 64px rgba(45,62,110,0.30), var(--inset-hi);
   animation: pop-in 0.2s ease;
   display: flex; flex-direction: column; gap: 16px;
@@ -452,6 +453,17 @@ input, textarea, select { outline: none; }
 .share-copy-btn.copied { background: var(--green-dim); border-color: var(--green); color: var(--green); }
 .share-copy-btn.slim { margin-left: auto; }
 .share-hint { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.share-qr {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding-top: 4px;
+}
+.share-qr-img {
+  width: 168px; height: 168px;
+  background: #fff;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
 .share-warn {
   font-size: 12px; color: var(--yellow); background: rgba(255,248,225,0.7);
   border: 1px solid rgba(180,117,10,0.30); border-radius: 8px; padding: 10px 12px; line-height: 1.6;
