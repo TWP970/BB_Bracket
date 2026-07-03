@@ -1,6 +1,9 @@
 // App.jsx
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTournament } from './context/TournamentContext';
+import { useAuth } from './context/AuthContext';
+import { saveTournament } from './lib/cloudSave';
+import AccountModal from './components/Account/AccountModal';
 import Sidebar from './components/Sidebar/Sidebar';
 import BracketView from './components/Bracket/BracketView';
 import RoundRobinView from './components/RoundRobin/RoundRobinView';
@@ -112,12 +115,25 @@ function TournamentArea() {
 export default function App() {
   const [showShare, setShowShare] = useState(false);
   const [showCounter, setShowCounter] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const { user } = useAuth();
   // Desktop starts expanded; phones (incl. landscape) start collapsed
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.innerWidth > 768 && window.innerHeight > 520
   );
   const { state } = useTournament();
   const touchRef = useRef({ startX: 0, startY: 0 });
+
+  // Auto-save: once a tournament is linked to the cloud (_saveId), sync
+  // every change (debounced) so the user can continue next time.
+  useEffect(() => {
+    const t = state.tournament;
+    if (!user || !t?._saveId) return;
+    const h = setTimeout(() => {
+      saveTournament(user.uid, t).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(h);
+  }, [state.tournament, user]);
 
   // ── Swipe gesture handlers ─────────────────────────────────
   const handleTouchStart = useCallback((e) => {
@@ -187,9 +203,20 @@ export default function App() {
           <span className="header-badge">5 種賽制</span>
           <span className="header-badge">即時更新</span>
         </div>
-        {/* Action buttons — only shown when a tournament is active */}
-        {state.tournament && (
-          <div className="header-actions">
+        {/* Action buttons */}
+        <div className="header-actions">
+          <button
+            className="share-btn-header account-btn"
+            onClick={() => setShowAccount(true)}
+            title={user ? '帳號與雲端賽程' : '登入以儲存賽程'}
+          >
+            {user?.photoURL
+              ? <img className="account-avatar-sm" src={user.photoURL} alt="" referrerPolicy="no-referrer" />
+              : '👤'}
+            {user ? (user.displayName?.split(' ')[0] || '帳號') : '登入'}
+          </button>
+          {state.tournament && (
+            <>
             <button
               className="share-btn-header"
               onClick={() => setShowCounter(true)}
@@ -204,8 +231,9 @@ export default function App() {
             >
               📡 分享觀戰
             </button>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </header>
 
       <div className="app-body">
@@ -228,6 +256,9 @@ export default function App() {
       )}
       {showCounter && (
         <JudgeQRModal onClose={() => setShowCounter(false)} />
+      )}
+      {showAccount && (
+        <AccountModal onClose={() => setShowAccount(false)} />
       )}
     </div>
   );

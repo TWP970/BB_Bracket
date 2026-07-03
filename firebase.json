@@ -1,4 +1,17 @@
 {
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true,
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "BB Bracket",
+        "supportEmail": "s25590580@gmail.com",
+        "authorizedRedirectUris": ["https://bb-bracket.web.app"]
+      }
+    }
+  },
   "hosting": {
     "public": "dist",
     "ignore": [
