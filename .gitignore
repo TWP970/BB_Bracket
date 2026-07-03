@@ -33,3 +33,6 @@ test-scale.js
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code 設定
+.claude/

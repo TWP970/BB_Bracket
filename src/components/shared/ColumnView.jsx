@@ -1,21 +1,18 @@
 // components/shared/ColumnView.jsx
-// Tree-style column bracket for RR / Swiss.
-// Small (≤5 rounds, ≤16 matches/round): full columns + SVG flow connectors.
-// Large: round-navigator with one round at a time.
+// Beyblade X style column bracket for RR / Swiss.
+// Matches displayed as clean white cards on the light parchment background.
 import { useState } from 'react';
-import { useTournament } from '../../context/TournamentContext';
 import MatchCard from './MatchCard';
-import BracketCanvas from './BracketCanvas';
+import ZoomPane from './ZoomPane';
 
-const CARD_W = 200;
-const CARD_H = 155;
-const V_GAP  = 20;
-const H_GAP  = 60;
-const PAD_X  = 20;
-const PAD_Y  = 40;
-const ROW_H  = CARD_H + V_GAP;
+const CARD_W = 220;
+const CARD_H = 140;
+const V_GAP = 14;
+const H_GAP = 40;
+const PAD_X = 20;
+const PAD_Y = 44;
+const ROW_H = CARD_H + V_GAP;
 
-// ── Inline card (wraps shared MatchCard with extra prop) ──────
 function ColCard({ match, extra = {} }) {
   return <MatchCard match={match} extra={extra} />;
 }
@@ -38,7 +35,7 @@ function FlowConnectors({ rounds, totalW, totalH }) {
         lines.push(
           <path key={`${ri}-${mi}`}
             d={`M ${rx} ${y} L ${midX} ${y} L ${midX} ${y} L ${nx} ${y}`}
-            fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5"
+            fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="1.5"
             strokeLinecap="round" strokeLinejoin="round" />
         );
       }
@@ -54,47 +51,43 @@ function FlowConnectors({ rounds, totalW, totalH }) {
 
 // ── Full column view (small tournaments) ──────────────────────
 function FullColumns({ rounds, labels, extra, footer }) {
-  const maxM  = Math.max(...rounds.map(r => r.length), 1);
+  const maxM = Math.max(...rounds.map(r => r.length), 1);
   const totalH = maxM * ROW_H + PAD_Y + (footer ? 70 : 20);
   const totalW = rounds.length * (CARD_W + H_GAP) + PAD_X + 20;
 
   return (
-    <BracketCanvas contentW={totalW} contentH={totalH}>
-      <FlowConnectors rounds={rounds} totalW={totalW} totalH={totalH} />
-
-      {rounds.map((rm, ri) => {
-        const x     = PAD_X + ri * (CARD_W + H_GAP);
-        const label = labels?.[ri] ?? `第 ${ri + 1} 輪`;
-        const done  = rm.every(m => m.isCompleted);
-        return (
-          <div key={ri}>
-            <div style={{
-              position:'absolute', top:4, left:x, width:CARD_W,
-              textAlign:'center', fontSize:11, fontWeight:700,
-              textTransform:'uppercase', letterSpacing:'0.07em',
-              color: done ? 'var(--green)' : 'var(--text3)',
-              display:'flex', alignItems:'center', justifyContent:'center', gap:4,
-            }}>
-              {label}{done && ' ✓'}
-            </div>
-            {rm.map((m, mi) => (
-              <div key={m.id} style={{
-                position:'absolute', left:x, top: PAD_Y + mi * ROW_H, width:CARD_W,
-                contentVisibility:'auto', containIntrinsicSize:`${CARD_W}px ${CARD_H}px`,
-              }}>
-                <ColCard match={m} extra={extra} />
+    <ZoomPane>
+      <div style={{ position: 'relative', width: totalW, height: totalH }}>
+        <FlowConnectors rounds={rounds} totalW={totalW} totalH={totalH} />
+          {rounds.map((rm, ri) => {
+            const x = PAD_X + ri * (CARD_W + H_GAP);
+            const label = labels?.[ri] ?? `第 ${ri + 1} 輪`;
+            const done = rm.every(m => m.isCompleted);
+            return (
+              <div key={ri}>
+                <div className="bey-round-label" style={{
+                  position: 'absolute', top: 8, left: x, width: CARD_W,
+                }}>
+                  {label}{done && ' ✓'}
+                </div>
+                {rm.map((m, mi) => (
+                  <div key={m.id} style={{
+                    position: 'absolute', left: x, top: PAD_Y + mi * ROW_H, width: CARD_W,
+                    contentVisibility: 'auto', containIntrinsicSize: `${CARD_W}px ${CARD_H}px`,
+                  }}>
+                    <ColCard match={m} extra={extra} />
+                  </div>
+                ))}
               </div>
-            ))}
+            );
+          })}
+        {footer && (
+          <div style={{ position: 'absolute', left: PAD_X, top: maxM * ROW_H + PAD_Y + 10, width: CARD_W * 1.4 }}>
+            {footer}
           </div>
-        );
-      })}
-
-      {footer && (
-        <div style={{ position:'absolute', left:PAD_X, top: maxM * ROW_H + PAD_Y + 10, width: CARD_W * 1.4 }}>
-          {footer}
-        </div>
-      )}
-    </BracketCanvas>
+        )}
+      </div>
+    </ZoomPane>
   );
 }
 
@@ -102,45 +95,41 @@ function FullColumns({ rounds, labels, extra, footer }) {
 function RoundNav({ rounds, labels, extra, footer }) {
   const [ri, setRi] = useState(0);
   const total = rounds.length;
-  const cur   = rounds[ri] ?? [];
+  const cur = rounds[ri] ?? [];
   const label = labels?.[ri] ?? `第 ${ri + 1} 輪`;
-  const done  = cur.every(m => m.isCompleted);
-  const totalH = cur.length * ROW_H + PAD_Y + 20;
+  const done = cur.every(m => m.isCompleted);
 
   return (
-    <div className="round-nav-wrapper">
-      {/* Navigator bar */}
-      <div className="round-nav-bar">
-        <button className="round-nav-btn" onClick={() => setRi(r => Math.max(0, r-1))} disabled={ri === 0}>‹ 上一輪</button>
-        <div className="round-nav-pills">
-          {Array.from({ length: total }, (_, i) => (
-            <button key={i} className={`round-pill ${i === ri ? 'active' : ''}`} onClick={() => setRi(i)}>
-              {i + 1}
-            </button>
-          ))}
+    <div className="bey-bracket-container">
+      <div className="bey-bracket-scroll" style={{ padding: '12px 20px 20px' }}>
+        {/* Navigator bar */}
+        <div className="bey-round-nav-bar">
+          <button className="bey-round-nav-btn" onClick={() => setRi(r => Math.max(0, r - 1))} disabled={ri === 0}>‹ 上一輪</button>
+          <div className="bey-round-nav-pills">
+            {Array.from({ length: total }, (_, i) => (
+              <button key={i} className={`bey-round-pill ${i === ri ? 'active' : ''}`} onClick={() => setRi(i)}>
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <button className="bey-round-nav-btn" onClick={() => setRi(r => Math.min(total - 1, r + 1))} disabled={ri === total - 1}>下一輪 ›</button>
         </div>
-        <button className="round-nav-btn" onClick={() => setRi(r => Math.min(total - 1, r+1))} disabled={ri === total - 1}>下一輪 ›</button>
-      </div>
 
-      <div className="round-nav-label">
-        {label} — {cur.length} 場 {done && <span className="complete-badge badge" style={{marginLeft:6}}>✓ 完成</span>}
-      </div>
+        <div className="bey-round-label" style={{ textAlign: 'center', margin: '8px 0 12px' }}>
+          {label} — {cur.length} 場 {done && <span className="bey-done-badge">✓ 完成</span>}
+        </div>
 
-      {/* Matches */}
-      <div className="tree-bracket-scroll" style={{ maxHeight:'65vh' }}>
-        <div style={{ position:'relative', width: CARD_W + PAD_X * 2, height: totalH, margin:'0 auto' }}>
-          {cur.map((m, mi) => (
-            <div key={m.id} style={{
-              position:'absolute', left: PAD_X, top: PAD_Y + mi * ROW_H, width: CARD_W,
-              contentVisibility:'auto', containIntrinsicSize:`${CARD_W}px ${CARD_H}px`,
-            }}>
+        {/* Match grid */}
+        <div className="bey-match-grid">
+          {cur.map((m) => (
+            <div key={m.id} className="bey-match-grid-item">
               <ColCard match={m} extra={extra} />
             </div>
           ))}
         </div>
-      </div>
 
-      {footer && <div style={{ padding:'12px 0' }}>{footer}</div>}
+        {footer && <div style={{ padding: '12px 0' }}>{footer}</div>}
+      </div>
     </div>
   );
 }

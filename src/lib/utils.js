@@ -23,14 +23,16 @@ export function padWithByes(players, targetSize) {
   return result;
 }
 
-// Standard bracket seeding: ensures seed 1 & 2 meet only in finals
+// Standard bracket seeding: ensures seed 1 & 2 meet only in finals,
+// seeds 3 & 4 in the semifinals, etc. Mirror value doubles per level.
 export function getSeededSlots(size) {
-  let slots = [1, 2];
+  let slots = [1];
   while (slots.length < size) {
+    const mirror = slots.length * 2 + 1;
     const next = [];
     for (const s of slots) {
       next.push(s);
-      next.push(size + 1 - s);
+      next.push(mirror - s);
     }
     slots = next;
   }
@@ -45,17 +47,21 @@ export function arrangePlayers(players, size) {
 
   seeded.forEach(player => {
     const slotIndex = seededSlots.indexOf(player.seed);
-    if (slotIndex !== -1) slotArray[slotIndex] = player;
+    if (slotIndex !== -1 && !slotArray[slotIndex]) slotArray[slotIndex] = player;
+    else unseeded.unshift(player); // seed out of range → treat as unseeded
   });
 
+  // Fill remaining slots strongest-position-first so BYEs land on the
+  // weakest seed positions and always face a real player (never BYE vs BYE).
+  const emptyIdx = [];
+  for (let i = 0; i < size; i++) if (!slotArray[i]) emptyIdx.push(i);
+  emptyIdx.sort((a, b) => seededSlots[a] - seededSlots[b]);
   let ui = 0;
-  for (let i = 0; i < size; i++) {
-    if (!slotArray[i]) {
-      slotArray[i] = ui < unseeded.length
-        ? unseeded[ui++]
-        : { id: `bye_${i}`, name: 'BYE', seed: null, isBye: true };
-    }
-  }
+  emptyIdx.forEach(i => {
+    slotArray[i] = ui < unseeded.length
+      ? unseeded[ui++]
+      : { id: `bye_${i}`, name: 'BYE', seed: null, isBye: true };
+  });
   return slotArray;
 }
 

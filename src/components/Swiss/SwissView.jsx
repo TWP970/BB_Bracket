@@ -35,22 +35,22 @@ export default function SwissView({ tournament, groupIdx = null, advanceCount = 
   return (
     <div className="swiss-view">
       {/* Progress bar */}
-      <div className="swiss-progress-bar">
-        <div className="swiss-progress-track">
+      <div className="bey-swiss-progress">
+        <div className="bey-swiss-progress-track">
           <div
-            className="swiss-progress-fill"
+            className="bey-swiss-progress-fill"
             style={{ width: `${Math.min((tournament.currentRound / tournament.totalRounds) * 100, 100)}%` }}
           />
         </div>
-        <span className="swiss-progress-label">
+        <span className="bey-swiss-progress-label">
           第 {tournament.currentRound} / {tournament.totalRounds} 輪
-          {complete && <span className="badge complete-badge" style={{ marginLeft: 8 }}>✓ 賽事完畢</span>}
+          {complete && <span className="bey-done-badge" style={{ marginLeft: 8 }}>✓ 賽事完畢</span>}
         </span>
       </div>
 
-      <div className="view-tabs">
-        <button className={`tab-btn ${tab === 'bracket' ? 'active' : ''}`} onClick={() => setTab('bracket')}>📅 樹狀賽程圖</button>
-        <button className={`tab-btn ${tab === 'standings' ? 'active' : ''}`} onClick={() => setTab('standings')}>📊 排名</button>
+      <div className="bey-view-tabs">
+        <button className={`bey-tab-btn ${tab === 'bracket' ? 'active' : ''}`} onClick={() => setTab('bracket')}>📅 賽程圖</button>
+        <button className={`bey-tab-btn ${tab === 'standings' ? 'active' : ''}`} onClick={() => setTab('standings')}>📊 排名</button>
       </div>
 
       {tab === 'bracket' && (
@@ -63,7 +63,11 @@ export default function SwissView({ tournament, groupIdx = null, advanceCount = 
       )}
 
       {tab === 'standings' && (
-        <StandingsTable standings={sorted} mode="swiss" showAdvance={advanceCount} />
+        <div className="bey-bracket-container">
+          <div className="bey-bracket-scroll" style={{ padding: '16px 20px' }}>
+            <StandingsTable standings={sorted} mode="swiss" showAdvance={advanceCount} />
+          </div>
+        </div>
       )}
     </div>
   );

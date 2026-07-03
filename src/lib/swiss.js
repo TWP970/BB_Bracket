@@ -1,5 +1,5 @@
 // lib/swiss.js
-import { shuffle, defaultSwissRounds } from './utils';
+import { defaultSwissRounds } from './utils';
 
 export function generateSwiss(players, totalRounds = null) {
   const rounds = totalRounds ?? defaultSwissRounds(players.length);
@@ -34,7 +34,7 @@ export function generateNextSwissRound(tournament) {
     if (byes.length === 0) byes.push(unpaired.pop());
   }
 
-  const pairs = pairPlayers(unpaired, t);
+  const pairs = pairPlayers(unpaired);
 
   pairs.forEach(([s1, s2], idx) => {
     matches.push({
@@ -63,7 +63,7 @@ export function generateNextSwissRound(tournament) {
   return t;
 }
 
-function pairPlayers(standings, tournament) {
+function pairPlayers(standings) {
   const pool = [...standings];
   const pairs = [];
   while (pool.length >= 2) {

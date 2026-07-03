@@ -1,5 +1,4 @@
 // lib/roundrobin.js
-import { shuffle } from './utils';
 
 export function generateRoundRobin(players) {
   const standings = {};

@@ -1,7 +1,7 @@
 // context/TournamentContext.jsx
 import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import { createPlayer } from '../lib/utils';
-import { generateSingleElimination, generateDoubleElimination, recordResult } from '../lib/bracket';
+import { generateSingleElimination, generateDoubleElimination, recordResult, advancePlayer, withdrawAdvance } from '../lib/bracket';
 import { generateRoundRobin, recordRRResult } from '../lib/roundrobin';
 import { generateSwiss, generateNextSwissRound, recordSwissResult } from '../lib/swiss';
 import {
@@ -62,9 +62,10 @@ export function TournamentProvider({ children }) {
     broadcast(state.tournament, roomCode);
   }, [state.tournament]);
 
-  const generate = useCallback((playersOverride) => {
+  const generate = useCallback((playersOverride, formatOverride) => {
     const players = playersOverride ?? state.players;
-    const { format, config } = state;
+    const format = formatOverride ?? state.format;
+    const { config } = state;
     if (players.length < 2) {
       dispatch({ type: 'SHOW_TOAST', payload: { msg: '⚠️ 請至少輸入 2 位選手', kind: 'warning' } });
       return;
@@ -128,6 +129,21 @@ export function TournamentProvider({ children }) {
       dispatch({ type: 'SHOW_TOAST', payload: { msg: `❌ ${e.message}`, kind: 'error' } });
     }
   }, [state.players, state.format, state.config]);
+
+  // Dev/test shortcut: ?autogen=16&format=single&seeds=4 generates on load
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const n = parseInt(qs.get('autogen'), 10);
+    if (!n || n < 2 || n > 1000) return;
+    const format = qs.get('format') || 'single';
+    const seeds = Math.min(parseInt(qs.get('seeds'), 10) || 0, n);
+    const players = Array.from({ length: n }, (_, i) =>
+      createPlayer(i, `選手 ${i + 1}`, i < seeds ? i + 1 : null));
+    dispatch({ type: 'SET_FORMAT', payload: format });
+    dispatch({ type: 'SET_PLAYERS', payload: players });
+    generate(players, format);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   const submitScore = useCallback((matchId, score1, score2, extra = {}) => {
@@ -225,6 +241,36 @@ export function TournamentProvider({ children }) {
 
   const canUndo = undoStack.current.length > 0;
 
+  const clickAdvance = useCallback((matchId, playerId) => {
+    const t = state.tournament;
+    if (!t) return;
+    undoStack.current = [...undoStack.current.slice(-(MAX_UNDO - 1)), JSON.parse(JSON.stringify(t))];
+    let updated;
+    if (t.type === 'multistage') {
+      if (!t.knockoutTournament) return;
+      const ko = advancePlayer(t.knockoutTournament, matchId, playerId);
+      updated = { ...t, knockoutTournament: ko, champion: ko.champion };
+    } else {
+      updated = advancePlayer(t, matchId, playerId);
+    }
+    dispatch({ type: 'SET_TOURNAMENT', payload: updated });
+  }, [state.tournament]);
+
+  const clickWithdraw = useCallback((matchId) => {
+    const t = state.tournament;
+    if (!t) return;
+    undoStack.current = [...undoStack.current.slice(-(MAX_UNDO - 1)), JSON.parse(JSON.stringify(t))];
+    let updated;
+    if (t.type === 'multistage') {
+      if (!t.knockoutTournament) return;
+      const ko = withdrawAdvance(t.knockoutTournament, matchId);
+      updated = { ...t, knockoutTournament: ko, champion: ko.champion };
+    } else {
+      updated = withdrawAdvance(t, matchId);
+    }
+    dispatch({ type: 'SET_TOURNAMENT', payload: updated });
+  }, [state.tournament]);
+
   const reset = useCallback(() => {
     undoStack.current = [];
     dispatch({ type: 'RESET' });
@@ -232,7 +278,8 @@ export function TournamentProvider({ children }) {
 
   return (
     <TournamentContext.Provider value={{
-      state, dispatch, generate, submitScore, undoScore, canUndo, nextSwissRound, advanceKnockout, reset, roomCode
+      state, dispatch, generate, submitScore, undoScore, canUndo, nextSwissRound, advanceKnockout, reset, roomCode,
+      clickAdvance, clickWithdraw
     }}>
       {children}
     </TournamentContext.Provider>

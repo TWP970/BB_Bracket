@@ -2,17 +2,19 @@
 // Losers Bracket renderer — column-based with SVG connector lines
 // LB is NOT a balanced binary tree (drops alternate with consolidations),
 // so we use an even vertical distribution per round + follow nextMatchId for connectors.
-import MatchCard from '../shared/MatchCard';
+// Uses BeyMatchBox: click a player to advance, click again to withdraw.
+import BeyMatchBox from './BeyMatchBox';
 
-const CARD_W = 200;
-const CARD_H = 72;
-const V_GAP   = 88;
-const H_GAP   = 68;
-const PAD_X   = 20;
-const PAD_Y   = 40;
-const UNIT    = CARD_H + V_GAP;
+function getLBSizing(maxCount) {
+  if (maxCount > 32) return { cardW: 130, cardH: 52, vGap: 8, hGap: 36 };
+  if (maxCount > 16) return { cardW: 150, cardH: 56, vGap: 12, hGap: 44 };
+  return { cardW: 180, cardH: 62, vGap: 24, hGap: 56 };
+}
 
-export default function LBTree({ matches, lbRounds, wbRounds }) {
+const PAD_X = 20;
+const PAD_Y = 40;
+
+export default function LBTree({ matches, lbRounds }) {
   if (!matches || lbRounds < 1) return null;
 
   const arr = Object.values(matches)
@@ -26,17 +28,20 @@ export default function LBTree({ matches, lbRounds, wbRounds }) {
   arr.forEach(m => { (byRound[m.round] = byRound[m.round] || []).push(m); });
   const maxCount = Math.max(...Object.values(byRound).map(r => r.length));
 
-  const totalH  = maxCount * UNIT + PAD_Y + 20;
-  const totalW  = PAD_X + lbRounds * (CARD_W + H_GAP) + 40;
+  const { cardW, cardH, vGap, hGap } = getLBSizing(maxCount);
+  const unit = cardH + vGap;
+
+  const totalH  = maxCount * unit + PAD_Y + 20;
+  const totalW  = PAD_X + lbRounds * (cardW + hGap) + 40;
 
   // Compute y for a match in a round: center within available vertical space
   function pos(round, position, countInRound) {
     const slot  = totalH - PAD_Y;
     const step  = slot / countInRound;
-    const y     = PAD_Y + step * position + (step - CARD_H) / 2;
+    const y     = PAD_Y + step * position + (step - cardH) / 2;
     const cy    = PAD_Y + step * position + step / 2;
-    const x     = PAD_X + (round - 1) * (CARD_W + H_GAP);
-    return { x, y, cx: x + CARD_W, cy, lx: x };
+    const x     = PAD_X + (round - 1) * (cardW + hGap);
+    return { x, y, cx: x + cardW, cy, lx: x };
   }
 
   // Pre-compute positions
@@ -54,8 +59,8 @@ export default function LBTree({ matches, lbRounds, wbRounds }) {
 
     const from  = posMap[m.id];
     const to    = posMap[nextM.id];
-    const midX  = from.cx + H_GAP / 2;
-    const color = m.winner ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)';
+    const midX  = from.cx + hGap / 2;
+    const color = m.winner ? '#8bc34a' : 'rgba(0,0,0,0.12)';
 
     return (
       <path
@@ -63,7 +68,7 @@ export default function LBTree({ matches, lbRounds, wbRounds }) {
         d={`M ${from.cx} ${from.cy} L ${midX} ${from.cy} L ${midX} ${to.cy} L ${to.lx} ${to.cy}`}
         fill="none"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -75,11 +80,9 @@ export default function LBTree({ matches, lbRounds, wbRounds }) {
     const round = parseInt(r);
     const { x } = posMap[byRound[round][0].id];
     return (
-      <div key={`lbl-${r}`} style={{
-        position: 'absolute', top: 4, left: x, width: CARD_W,
-        textAlign: 'center', fontSize: 10, fontWeight: 700,
-        textTransform: 'uppercase', letterSpacing: '0.07em',
-        color: 'var(--text3)', pointerEvents: 'none',
+      <div key={`lbl-${r}`} className="bey-round-label" style={{
+        position: 'absolute', top: 8, left: x, width: cardW,
+        pointerEvents: 'none',
       }}>
         LB 第 {r} 輪
       </div>
@@ -87,24 +90,22 @@ export default function LBTree({ matches, lbRounds, wbRounds }) {
   });
 
   return (
-    <div className="tree-bracket-scroll">
-      <div style={{ position: 'relative', width: totalW, height: totalH, minWidth: totalW }}>
-        <svg
-          style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
-          width={totalW} height={totalH}
-        >
-          {connectors}
-        </svg>
-        {labels}
-        {arr.map(m => {
-          const { x, y } = posMap[m.id];
-          return (
-            <div key={m.id} style={{ position: 'absolute', left: x, top: y, width: CARD_W }}>
-              <MatchCard match={m} bracketType="losers" />
-            </div>
-          );
-        })}
-      </div>
+    <div style={{ position: 'relative', width: totalW, height: totalH, minWidth: totalW }}>
+      <svg
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none', overflow: 'visible' }}
+        width={totalW} height={totalH}
+      >
+        {connectors}
+      </svg>
+      {labels}
+      {arr.map(m => {
+        const { x, y } = posMap[m.id];
+        return (
+          <div key={m.id} style={{ position: 'absolute', left: x, top: y, width: cardW }}>
+            <BeyMatchBox match={m} />
+          </div>
+        );
+      })}
     </div>
   );
 }

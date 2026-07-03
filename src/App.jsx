@@ -49,12 +49,12 @@ function TournamentArea() {
       return (
         <div className="grouped-rr-view">
           {tournament.groupTournaments.map((gt, idx) => (
-            <div key={gt.groupId} className="group-section-card">
-              <div className="group-section-header">
-                <span className="ms-group-badge">{gt.groupName} 組</span>
-                <span className="ms-group-sub">循環賽 · {gt.players.length} 人</span>
+            <div key={gt.groupId} className="bey-bracket-container" style={{ marginBottom: 20 }}>
+              <div className="bey-group-header">
+                <span className="bey-group-badge">{gt.groupName} 組</span>
+                <span className="bey-group-sub">循環賽 · {gt.players.length} 人</span>
               </div>
-              <div style={{ padding: 12 }}>
+              <div style={{ padding: '0 12px 12px' }}>
                 <RoundRobinView tournament={gt} groupIdx={idx} />
               </div>
             </div>

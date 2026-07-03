@@ -15,9 +15,9 @@ export default function RoundRobinView({ tournament, groupIdx = null, advanceCou
 
   return (
     <div className="rr-view">
-      <div className="view-tabs">
-        <button className={`tab-btn ${tab === 'bracket' ? 'active' : ''}`} onClick={() => setTab('bracket')}>📅 樹狀賽程圖</button>
-        <button className={`tab-btn ${tab === 'standings' ? 'active' : ''}`} onClick={() => setTab('standings')}>📊 積分榜</button>
+      <div className="bey-view-tabs">
+        <button className={`bey-tab-btn ${tab === 'bracket' ? 'active' : ''}`} onClick={() => setTab('bracket')}>📅 賽程圖</button>
+        <button className={`bey-tab-btn ${tab === 'standings' ? 'active' : ''}`} onClick={() => setTab('standings')}>📊 積分榜</button>
       </div>
 
       {tab === 'bracket' && (
@@ -25,7 +25,11 @@ export default function RoundRobinView({ tournament, groupIdx = null, advanceCou
       )}
 
       {tab === 'standings' && (
-        <StandingsTable standings={sorted} mode="rr" showAdvance={advanceCount} />
+        <div className="bey-bracket-container">
+          <div className="bey-bracket-scroll" style={{ padding: '16px 20px' }}>
+            <StandingsTable standings={sorted} mode="rr" showAdvance={advanceCount} />
+          </div>
+        </div>
       )}
     </div>
   );

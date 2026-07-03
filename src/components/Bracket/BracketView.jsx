@@ -1,18 +1,18 @@
 // components/Bracket/BracketView.jsx
-import TreeBracket from './TreeBracket';
+import BeyBracket from './BeyBracket';
 import LBTree from './LBTree';
-import MatchCard from '../shared/MatchCard';
+import BeyMatchBox from './BeyMatchBox';
+import ZoomPane from '../shared/ZoomPane';
 
 export default function BracketView({ tournament }) {
   if (!tournament) return null;
-  const { type, matches, rounds, wbRounds, lbRounds, champion } = tournament;
+  const { type, matches, wbRounds, lbRounds, champion } = tournament;
 
   if (type === 'single') {
     return (
       <div className="bracket-view">
         <div className="bracket-section-label wb-label">🏹 單淘汰賽程</div>
-        <TreeBracket matches={matches} rounds={rounds} bracketType="winners" champion={champion} />
-        {champion && <ChampionBanner champion={champion} subtitle="單淘汰冠軍" />}
+        <BeyBracket tournament={tournament} />
       </div>
     );
   }
@@ -20,29 +20,36 @@ export default function BracketView({ tournament }) {
   if (type === 'double') {
     const gf1 = matches['gf_1'];
     const gf2 = matches['gf_2'];
+    // Use BeyBracket for the winners bracket part
+    const wbTournament = { ...tournament, type: 'single', rounds: wbRounds };
     return (
       <div className="bracket-view">
-        <div className="de-section-label wb-label">🏆 主賽 (Winners Bracket)</div>
-        <TreeBracket matches={matches} rounds={wbRounds} bracketType="winners" />
+        <div className="bracket-section-label wb-label">🏆 主賽 (Winners Bracket)</div>
+        <BeyBracket tournament={wbTournament} />
 
-        <div className="de-section-label lb-label">💀 敗部 (Losers Bracket)</div>
-        <LBTree matches={matches} lbRounds={lbRounds} wbRounds={wbRounds} />
+        <div className="bracket-section-label lb-label" style={{ marginTop: 24 }}>💀 敗部 (Losers Bracket)</div>
+        <ZoomPane>
+          <LBTree matches={matches} lbRounds={lbRounds} />
+        </ZoomPane>
 
-        <div className="de-section-label gf-label">⚔️ 大決賽 (Grand Final)</div>
-        <div className="gf-row">
-          {gf1 && (
-            <div className="gf-col">
-              <div className="round-label">大決賽</div>
-              <MatchCard match={gf1} bracketType="grand_final" />
-            </div>
-          )}
-          {gf2 && !gf2.locked && (
-            <div className="gf-col">
-              <div className="round-label">重賽</div>
-              <MatchCard match={gf2} bracketType="grand_final" />
-            </div>
-          )}
+        <div className="bracket-section-label gf-label" style={{ marginTop: 24 }}>⚔️ 大決賽 (Grand Final)</div>
+        <div className="bey-bracket-container">
+          <div className="bey-bracket-scroll" style={{ display: 'flex', gap: 24, justifyContent: 'center', padding: '20px 24px' }}>
+            {gf1 && (
+              <div className="bey-gf-col">
+                <div className="bey-round-label">大決賽</div>
+                <BeyMatchBox match={gf1} />
+              </div>
+            )}
+            {gf2 && !gf2.locked && (
+              <div className="bey-gf-col">
+                <div className="bey-round-label">重賽</div>
+                <BeyMatchBox match={gf2} />
+              </div>
+            )}
+          </div>
         </div>
+
         {champion && <ChampionBanner champion={champion} subtitle="雙敗淘汰冠軍" />}
       </div>
     );
@@ -53,10 +60,10 @@ export default function BracketView({ tournament }) {
 
 function ChampionBanner({ champion, subtitle }) {
   return (
-    <div className="champion-banner">
-      <div className="champion-crown">👑</div>
-      <div className="champion-name">{champion.name}</div>
-      <div className="champion-subtitle">{subtitle}</div>
+    <div className="bey-champion-display" style={{ margin: '20px auto', maxWidth: 300 }}>
+      <div className="bey-champion-crown">👑</div>
+      <div className="bey-champion-name">{champion.name}</div>
+      <div style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{subtitle}</div>
     </div>
   );
 }

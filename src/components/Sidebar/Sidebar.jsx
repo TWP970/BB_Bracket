@@ -11,24 +11,41 @@ const FORMATS = [
   { id: 'multistage', icon: '🏟️', label: '多階段',  desc: 'Multi-Stage' },
 ];
 
-const PLAYER_COUNTS = [2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192, 256, 512, 1000];
-
 
 export default function Sidebar({ isOpen, onClose }) {
   const { state, dispatch, generate, reset } = useTournament();
   const { format, config, players } = state;
-  const [rawText, setRawText] = useState('');
-  const [playerCount, setPlayerCount] = useState(8);
+  const DEFAULT_COUNT = 8;
+  const [rawText, setRawText] = useState(
+    Array.from({ length: DEFAULT_COUNT }, (_, i) => `選手 ${i + 1}`).join('\n')
+  );
+  const [playerCount, setPlayerCount] = useState(DEFAULT_COUNT);
 
   const setFormat = (f) => dispatch({ type: 'SET_FORMAT', payload: f });
   const setConfig = (obj) => dispatch({ type: 'SET_CONFIG', payload: obj });
 
-  const handlePlayerCountChange = (n) => {
+  const applyPlayerCount = (n) => {
+    if (n < 2 || n > 1000) return;
     setPlayerCount(n);
     const lines = rawText.split('\n').filter(l => l.trim());
     const newLines = [...lines];
     while (newLines.length < n) newLines.push(`選手 ${newLines.length + 1}`);
     setRawText(newLines.slice(0, n).join('\n'));
+  };
+
+  const handleCountInput = (e) => {
+    const val = e.target.value;
+    const n = parseInt(val);
+    if (val === '') {
+      setPlayerCount(0);
+      return;
+    }
+    if (!isNaN(n)) {
+      setPlayerCount(n);
+      if (n >= 2 && n <= 1000) {
+        applyPlayerCount(n);
+      }
+    }
   };
 
   const parsePlayers = () => {
@@ -88,19 +105,23 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
         </section>
 
-        {/* Player Count */}
+        {/* Player Count — Simple Input */}
         <section className="sidebar-section">
           <h3 className="sidebar-section-title">👥 人數設定</h3>
-          <div className="count-selector">
-            {PLAYER_COUNTS.map(n => (
-              <button
-                key={n}
-                className={`count-btn ${playerCount === n ? 'active' : ''}`}
-                onClick={() => handlePlayerCountChange(n)}
-              >
-                {n}
-              </button>
-            ))}
+          <div className="count-input-row">
+            <input
+              type="number"
+              className="sidebar-input count-number-input"
+              min="2"
+              max="1000"
+              value={playerCount || ''}
+              onChange={handleCountInput}
+              placeholder="輸入人數"
+            />
+            <span className="count-input-suffix">人</span>
+          </div>
+          <div className="count-hint">
+            範圍：2 ~ 1000 人
           </div>
         </section>
 

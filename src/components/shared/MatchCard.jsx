@@ -25,7 +25,7 @@ export default function MatchCard({ match, extra = {}, bracketType = 'winners' }
 
   const handleKey = (e) => { if (e.key === 'Enter') handleConfirm(); };
 
-  const labelClass = (p, score, otherScore) => {
+  const labelClass = (p) => {
     if (!isCompleted || !p || p.isBye) return '';
     if (winner?.id === p.id) return 'winner';
     return 'loser';
@@ -36,7 +36,7 @@ export default function MatchCard({ match, extra = {}, bracketType = 'winners' }
   return (
     <div className={`${bracketClass} ${isCompleted ? 'completed' : ''} ${isBye ? 'bye' : ''}`}>
       {/* Player 1 */}
-      <div className={`match-player ${labelClass(p1, score1, score2)}`}>
+      <div className={`match-player ${labelClass(p1)}`}>
         <div className="player-info">
           {p1?.seed && <span className="seed-badge">{p1.seed}</span>}
           <span className="player-name">
@@ -53,7 +53,7 @@ export default function MatchCard({ match, extra = {}, bracketType = 'winners' }
       <div className="match-vs">vs</div>
 
       {/* Player 2 */}
-      <div className={`match-player ${labelClass(p2, score2, score1)}`}>
+      <div className={`match-player ${labelClass(p2)}`}>
         <div className="player-info">
           {p2?.seed && <span className="seed-badge">{p2.seed}</span>}
           <span className="player-name">
