@@ -42,21 +42,24 @@ export function useBroadcastSend() {
   const send = (tournament, roomCode) => {
     if (!tournament) return;
     const payload = JSON.stringify(tournament);
+    const ts = Date.now();
 
-    // Layer 1: BroadcastChannel
+    // Layer 1: BroadcastChannel — tagged with roomCode so spectators
+    // of a different room ignore it
     try {
       const ch = new BroadcastChannel(CHANNEL_NAME);
-      ch.postMessage({ type: 'STATE', payload });
+      ch.postMessage({ type: 'STATE', payload, roomCode, ts });
       ch.close();
     } catch (_) {}
 
-    // Layer 2: localStorage
-    try { localStorage.setItem(LS_KEY, payload); } catch (_) {}
+    // Layer 2: localStorage — envelope with roomCode + write-time ts,
+    // so polling can't keep re-asserting stale local state
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ payload, roomCode, ts })); } catch (_) {}
 
     // Layer 3: Firebase (cross-device)
     if (firebaseReady && roomCode) {
       const roomRef = ref(db, `${FB_ROOT}/${roomCode}`);
-      set(roomRef, { payload, ts: Date.now() }).catch(() => {});
+      set(roomRef, { payload, ts }).catch(() => {});
     }
   };
   return send;
@@ -80,12 +83,20 @@ export function useBroadcastReceive(initialState, roomCode) {
   };
 
   useEffect(() => {
+    // When spectating a specific room, only accept local-layer data
+    // tagged with the same room code — otherwise stale state from a
+    // tournament previously hosted on THIS device would override the
+    // remote one (correct bracket flashes, then gets replaced).
+    const roomMatches = (rc) => !roomCode || rc === roomCode;
+
     // Layer 1: BroadcastChannel (same browser)
     let ch;
     try {
       ch = new BroadcastChannel(CHANNEL_NAME);
       ch.onmessage = (e) => {
-        if (e.data?.type === 'STATE') handle(e.data.payload);
+        if (e.data?.type === 'STATE' && roomMatches(e.data.roomCode)) {
+          handle(e.data.payload, e.data.ts ?? Date.now());
+        }
       };
     } catch (_) {}
 
@@ -93,7 +104,16 @@ export function useBroadcastReceive(initialState, roomCode) {
     const poll = setInterval(() => {
       try {
         const raw = localStorage.getItem(LS_KEY);
-        if (raw) handle(raw);
+        if (!raw) return;
+        let rec = null;
+        try { rec = JSON.parse(raw); } catch (_) { return; }
+        if (rec && typeof rec === 'object' && typeof rec.payload === 'string') {
+          // envelope format: { payload, roomCode, ts }
+          if (roomMatches(rec.roomCode)) handle(rec.payload, rec.ts ?? Date.now());
+        } else if (!roomCode) {
+          // legacy format: raw tournament JSON without envelope
+          handle(raw);
+        }
       } catch (_) {}
     }, 2000);
 
