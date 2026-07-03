@@ -635,6 +635,32 @@ input, textarea, select { outline: none; }
   background: var(--red-dim); border: 1px solid rgba(217,56,44,0.3);
   border-radius: 8px; padding: 8px 12px;
 }
+.account-info {
+  font-size: 12px; font-weight: 700; color: var(--green);
+  background: var(--green-dim); border: 1px solid rgba(29,158,87,0.3);
+  border-radius: 8px; padding: 8px 12px;
+}
+.account-link-btn {
+  background: none; border: none; padding: 2px;
+  font-size: 12px; font-weight: 700; color: var(--primary);
+  cursor: pointer; text-decoration: underline; width: fit-content;
+  align-self: center;
+}
+.account-link-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.account-verify-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px;
+  background: rgba(255,248,225,0.6);
+  border: 1px solid rgba(180,117,10,0.3);
+  border-radius: var(--radius);
+  font-size: 12px; font-weight: 700; color: var(--yellow);
+}
+.account-verify-row.ok {
+  background: var(--green-dim);
+  border-color: rgba(29,158,87,0.3);
+  color: var(--green);
+}
+.account-verify-status { flex: 1; }
 .account-user-row {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px;

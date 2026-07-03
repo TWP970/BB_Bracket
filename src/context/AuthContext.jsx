@@ -7,6 +7,8 @@ import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  sendEmailVerification,
   signOut,
 } from 'firebase/auth';
 import { auth, authReady } from '../lib/firebase';
@@ -28,10 +30,21 @@ export function AuthProvider({ children }) {
   const signInGoogle = () => signInWithPopup(auth, new GoogleAuthProvider());
   const signInEmail = (email, pw) => signInWithEmailAndPassword(auth, email, pw);
   const registerEmail = (email, pw) => createUserWithEmailAndPassword(auth, email, pw);
+  const resetPassword = (email) => sendPasswordResetEmail(auth, email);
+  const sendVerifyEmail = () => sendEmailVerification(auth.currentUser);
   const signOutUser = () => signOut(auth);
+  // Refresh emailVerified etc. — onAuthStateChanged doesn't refire on reload()
+  const reloadUser = async () => {
+    if (!auth.currentUser) return;
+    await auth.currentUser.reload();
+    setUser({ ...auth.currentUser, providerData: auth.currentUser.providerData });
+  };
 
   return (
-    <AuthContext.Provider value={{ user, initializing, signInGoogle, signInEmail, registerEmail, signOutUser }}>
+    <AuthContext.Provider value={{
+      user, initializing, signInGoogle, signInEmail, registerEmail,
+      resetPassword, sendVerifyEmail, reloadUser, signOutUser,
+    }}>
       {children}
     </AuthContext.Provider>
   );

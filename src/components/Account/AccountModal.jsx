@@ -12,11 +12,15 @@ const AUTH_ERRORS = {
   'auth/wrong-password': '密碼錯誤',
   'auth/invalid-credential': '帳號或密碼錯誤',
   'auth/email-already-in-use': '此電子郵件已註冊，請直接登入',
-  'auth/weak-password': '密碼至少需要 6 個字元',
+  'auth/weak-password': '密碼強度不足（至少 8 碼，含英文字母與數字）',
+  'auth/password-does-not-meet-requirements': '密碼強度不足（至少 8 碼，含英文字母與數字）',
   'auth/popup-closed-by-user': '登入視窗已關閉',
   'auth/too-many-requests': '嘗試次數過多，請稍後再試',
 };
 const errMsg = (e) => AUTH_ERRORS[e?.code] ?? '操作失敗，請再試一次';
+
+// Client-side password policy for new accounts: >=8 chars, letter + number
+const isStrongPassword = (pw) => pw.length >= 8 && /[a-z]/i.test(pw) && /\d/.test(pw);
 
 function timeAgo(ts) {
   if (!ts) return '';
@@ -25,7 +29,10 @@ function timeAgo(ts) {
 }
 
 export default function AccountModal({ onClose }) {
-  const { user, signInGoogle, signInEmail, registerEmail, signOutUser } = useAuth();
+  const {
+    user, signInGoogle, signInEmail, registerEmail,
+    resetPassword, sendVerifyEmail, reloadUser, signOutUser,
+  } = useAuth();
   const { state, dispatch } = useTournament();
   const tournament = state.tournament;
 
@@ -33,7 +40,17 @@ export default function AccountModal({ onClose }) {
   const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [saves, setSaves] = useState(null); // null = loading
+
+  const isPasswordUser = user?.providerData?.some(p => p.providerId === 'password');
+
+  // Freshen emailVerified when the modal opens (verification happens
+  // out-of-band via the email link)
+  useEffect(() => {
+    if (user && isPasswordUser && !user.emailVerified) reloadUser().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toast = (msg, kind = 'success') =>
     dispatch({ type: 'SHOW_TOAST', payload: { msg, kind } });
@@ -51,6 +68,7 @@ export default function AccountModal({ onClose }) {
   const run = async (fn) => {
     setBusy(true);
     setError('');
+    setInfo('');
     try { await fn(); }
     catch (e) { setError(errMsg(e)); }
     finally { setBusy(false); }
@@ -121,7 +139,7 @@ export default function AccountModal({ onClose }) {
             <input
               className="sidebar-input account-input"
               type="password"
-              placeholder="密碼（至少 6 個字元）"
+              placeholder="密碼"
               value={pw}
               onChange={e => setPw(e.target.value)}
               autoComplete="current-password"
@@ -136,16 +154,29 @@ export default function AccountModal({ onClose }) {
               </button>
               <button
                 className="btn-secondary"
-                disabled={busy || !email || pw.length < 6}
+                disabled={busy || !email || !isStrongPassword(pw)}
                 onClick={() => run(async () => {
                   await registerEmail(email, pw);
-                  toast('🎉 註冊成功，已自動登入');
+                  sendVerifyEmail().catch(() => {});
+                  toast('🎉 註冊成功，驗證信已寄出');
                 })}
               >
                 註冊新帳號
               </button>
             </div>
+            <div className="share-hint">註冊密碼需至少 8 碼，並包含英文字母與數字。</div>
+            <button
+              className="account-link-btn"
+              disabled={busy || !email}
+              onClick={() => run(async () => {
+                await resetPassword(email);
+                setInfo('重設密碼信已寄出（若該信箱已註冊），請至信箱點擊連結重設。');
+              })}
+            >
+              忘記密碼？寄送重設信
+            </button>
             {error && <div className="account-error">{error}</div>}
+            {info && <div className="account-info">{info}</div>}
             <div className="share-hint">登入後可將賽程儲存到雲端，下次登入即可載入繼續。</div>
           </>
         )}
@@ -164,6 +195,37 @@ export default function AccountModal({ onClose }) {
                 登出
               </button>
             </div>
+
+            {isPasswordUser && (
+              <div className={`account-verify-row ${user.emailVerified ? 'ok' : ''}`}>
+                <span className="account-verify-status">
+                  {user.emailVerified ? '✅ 電子郵件已驗證' : '⚠️ 電子郵件尚未驗證'}
+                </span>
+                {!user.emailVerified && (
+                  <>
+                    <button
+                      className="share-copy-btn"
+                      disabled={busy}
+                      onClick={() => run(async () => {
+                        await sendVerifyEmail();
+                        setInfo('驗證信已寄出，請至信箱點擊連結完成驗證。');
+                      })}
+                    >
+                      重寄驗證信
+                    </button>
+                    <button
+                      className="share-copy-btn"
+                      disabled={busy}
+                      onClick={() => run(() => reloadUser())}
+                      title="完成信箱驗證後點此更新狀態"
+                    >
+                      更新狀態
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {info && <div className="account-info">{info}</div>}
 
             <button
               className="btn-primary"
