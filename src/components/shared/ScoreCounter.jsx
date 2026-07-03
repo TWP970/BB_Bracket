@@ -3,7 +3,7 @@
 // Pick a match, tap finish buttons to add points; first to 4 wins and the
 // score is sent via onScore(matchId, s1, s2). After a match ends the
 // counter lets you pick the next one.
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 
 const TARGET = 4; // first to 4 points wins (BEYBLADE X rule)
 
@@ -16,7 +16,7 @@ const FINISHES = [
 // Collect scoreable matches + the entry-number map (same numbering as
 // the bracket badges: round-1 slot position*2+1 / *2+2).
 function getScoreboard(t) {
-  const empty = { matches: [], numberOf: {} };
+  const empty = { matches: [], numberOf: {}, byId: {} };
   if (!t) return empty;
   const ko = t.type === 'multistage' ? t.knockoutTournament : t;
   if (!ko || (ko.type !== 'single' && ko.type !== 'double')) return empty;
@@ -39,7 +39,7 @@ function getScoreboard(t) {
       (bracketOrder[a.bracket] ?? 9) - (bracketOrder[b.bracket] ?? 9) ||
       a.round - b.round || a.position - b.position);
 
-  return { matches, numberOf };
+  return { matches, numberOf, byId: ko.matches };
 }
 
 function matchLabel(m, numberOf) {
@@ -50,7 +50,7 @@ function matchLabel(m, numberOf) {
 }
 
 export default function ScoreCounterPanel({ tournament, onScore, resultNote = null }) {
-  const { matches, numberOf } = useMemo(() => getScoreboard(tournament), [tournament]);
+  const { matches, numberOf, byId } = useMemo(() => getScoreboard(tournament), [tournament]);
 
   // Snapshot of the selected pairing — the live match object disappears
   // from the ready list once the result is recorded, so render from this.
@@ -58,6 +58,9 @@ export default function ScoreCounterPanel({ tournament, onScore, resultNote = nu
   const [s1, setS1] = useState(0);
   const [s2, setS2] = useState(0);
   const [result, setResult] = useState(null);
+  // Set once the host state confirms our result was applied — required to
+  // tell "host withdrew the score" apart from "not applied yet".
+  const [applied, setApplied] = useState(false);
 
   const pickMatch = (id) => {
     const m = matches.find(x => x.id === id) ?? null;
@@ -65,6 +68,7 @@ export default function ScoreCounterPanel({ tournament, onScore, resultNote = nu
     setS1(0);
     setS2(0);
     setResult(null);
+    setApplied(false);
   };
 
   const addPoints = (side, pts) => {
@@ -85,6 +89,19 @@ export default function ScoreCounterPanel({ tournament, onScore, resultNote = nu
     if (side === 1) setS1(v => Math.max(0, v - 1));
     else setS2(v => Math.max(0, v - 1));
   };
+
+  // Live status of the selected pairing (updates as host state syncs in):
+  // - completed elsewhere while scoring → lock the panel, force re-pick
+  // - host withdrew the score after our result → offer to score it again
+  const live = game ? byId[game.matchId] : null;
+
+  useEffect(() => {
+    if (result && live?.isCompleted) setApplied(true);
+  }, [result, live?.isCompleted]);
+
+  const takenElsewhere = !!game && !result && (!live || live.isCompleted);
+  const revertedByHost = !!game && !!result && applied && live && !live.isCompleted &&
+    live.player1 && live.player2 && !live.player1.isBye && !live.player2.isBye;
 
   const renderSide = (player, score, side) => (
     <div className={`counter-side ${side === 1 ? 'p1' : 'p2'} ${result?.winner?.id === player.id ? 'won' : ''}`}>
@@ -136,7 +153,18 @@ export default function ScoreCounterPanel({ tournament, onScore, resultNote = nu
         </div>
       )}
 
-      {game && (
+      {game && takenElsewhere && (
+        <div className="counter-result counter-stale">
+          <div className="counter-result-text">
+            ⚠️ 此對戰已由主控端記錄晉級，無法繼續計分
+          </div>
+          <button className="btn-primary counter-next-btn" onClick={() => pickMatch('')}>
+            選擇其他對戰
+          </button>
+        </div>
+      )}
+
+      {game && !takenElsewhere && (
         <>
           <div className="counter-arena">
             {renderSide(game.player1, s1, 1)}
@@ -144,7 +172,21 @@ export default function ScoreCounterPanel({ tournament, onScore, resultNote = nu
             {renderSide(game.player2, s2, 2)}
           </div>
 
-          {result ? (
+          {revertedByHost ? (
+            <div className="counter-result counter-stale">
+              <div className="counter-result-text">
+                ↩️ 主控端已將此比分調回，可重新計分
+              </div>
+              <div className="counter-result-actions">
+                <button className="btn-primary counter-next-btn" onClick={() => pickMatch(game.matchId)}>
+                  🔄 重新計分此場
+                </button>
+                <button className="btn-secondary counter-next-btn" onClick={() => pickMatch('')}>
+                  選擇其他對戰
+                </button>
+              </div>
+            </div>
+          ) : result ? (
             <div className="counter-result">
               <div className="counter-result-text">
                 🏆 <strong>{result.winner.name}</strong> 以 {Math.max(result.s1, result.s2)} : {Math.min(result.s1, result.s2)} 獲勝！

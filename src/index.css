@@ -503,6 +503,14 @@ input, textarea, select { outline: none; }
 .counter-result-note {
   font-size: 12px; font-weight: 700; color: var(--green); margin-top: 4px;
 }
+.counter-stale {
+  background: rgba(255,255,255,0.6);
+  border-color: rgba(180,117,10,0.4);
+}
+.counter-result-actions {
+  display: flex; gap: 8px; width: 100%; justify-content: center; flex-wrap: wrap;
+}
+.counter-result-actions .btn-secondary { width: auto; }
 .counter-select { width: 100%; font-size: 14px; padding: 10px 12px; }
 .counter-empty {
   text-align: center; padding: 40px 16px;
