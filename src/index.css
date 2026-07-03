@@ -99,6 +99,19 @@ input, textarea, select { outline: none; }
   border-right: 1px solid var(--glass-border);
   overflow-y: auto;
   flex-shrink: 0;
+  transition: width 0.25s ease, min-width 0.25s ease;
+}
+
+/* Desktop collapse: shrink to zero width so the bracket area reflows */
+@media (min-width: 769px) and (min-height: 521px) {
+  .sidebar.closed {
+    width: 0;
+    min-width: 0;
+    border-right-width: 0;
+    overflow: hidden;
+  }
+  /* keep content at fixed width while the panel clips it (no squish) */
+  .sidebar-inner { width: var(--sidebar-w); }
 }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-track { background: transparent; }
@@ -545,7 +558,7 @@ input, textarea, select { outline: none; }
 
 /* ── Hamburger Button ── */
 .hamburger-btn {
-  display: none; /* hidden on desktop */
+  display: flex; /* visible on all sizes — desktop collapses the panel */
   background: none; border: none; padding: 6px;
   cursor: pointer; z-index: 110;
 }
@@ -610,6 +623,10 @@ input, textarea, select { outline: none; }
 }
 .bey-zoom-btn:hover { border-color: var(--primary); color: var(--primary); }
 .bey-zoom-fit { width: auto; border-radius: 999px; padding: 0 10px; font-size: 11px; font-weight: 800; }
+.bey-zoom-fit.active {
+  background: linear-gradient(135deg, var(--lime2), var(--lime));
+  color: #fff; border-color: transparent;
+}
 .bey-zoom-label {
   min-width: 42px; text-align: center;
   font-size: 11px; font-weight: 800; color: var(--text2);
@@ -1010,8 +1027,7 @@ input, textarea, select { outline: none; }
 /* ══════════════════════════════════════════════════════════════
    Responsive
    ══════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .hamburger-btn { display: flex; }
+@media (max-width: 768px), (max-height: 520px) and (orientation: landscape) {
   .header-badges { display: none; }
 
   .app-header { padding: 0 12px; }
@@ -1020,18 +1036,21 @@ input, textarea, select { outline: none; }
   .logo-icon { font-size: 20px; }
   .share-btn-header { padding: 5px 10px; font-size: 12px; }
 
-  /* Sidebar as slide-over drawer */
-  .sidebar {
+  /* Sidebar as slide-over drawer (portrait phones & landscape phones) */
+  .sidebar, .sidebar.closed {
     position: fixed;
     top: var(--header-h);
     left: 0;
     bottom: 0;
     width: 300px;
+    min-width: 300px;
     z-index: 100;
     background: rgba(255,255,255,0.72);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     box-shadow: none;
+    border-right: 1px solid var(--glass-border);
+    overflow-y: auto;
   }
   .sidebar.open {
     transform: translateX(0);

@@ -107,7 +107,10 @@ function TournamentArea() {
 // ── Main App ──────────────────────────────────────────────────
 export default function App() {
   const [showShare, setShowShare] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Desktop starts expanded; phones (incl. landscape) start collapsed
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => window.innerWidth > 768 && window.innerHeight > 520
+  );
   const { state } = useTournament();
   const touchRef = useRef({ startX: 0, startY: 0 });
 

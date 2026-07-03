@@ -11,6 +11,9 @@ const clamp = (z) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
 
 export default function ZoomPane({ children }) {
   const [zoom, setZoom] = useState(1);
+  // Auto-fit: keep the bracket sized to the container until the user
+  // zooms manually; container resizes (sidebar collapse, rotation) refit.
+  const [autoFit, setAutoFit] = useState(true);
   const scrollRef = useRef(null);
   const contentRef = useRef(null);
   const anchorRef = useRef(null);   // keeps the point under the cursor fixed while zooming
@@ -52,14 +55,39 @@ export default function ZoomPane({ children }) {
     anchorRef.current = null;
   }, [zoom]);
 
-  const fitWidth = () => {
+  const computeFit = () => {
     const sc = scrollRef.current;
-    if (!sc || !size.w) return;
+    if (!sc || !size.w) return null;
     const cs = getComputedStyle(sc);
     const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
     // floor to 2 decimals so rounding never pushes content past the pane
-    zoomTo(Math.floor(((sc.clientWidth - pad - 2) / size.w) * 100) / 100, 0, 0);
+    return Math.floor(((sc.clientWidth - pad - 2) / size.w) * 100) / 100;
   };
+
+  const fitWidth = () => {
+    const f = computeFit();
+    if (f == null) return;
+    setAutoFit(true);
+    zoomTo(f, 0, 0);
+  };
+
+  // Auto-fit on mount and whenever the container resizes
+  // (sidebar collapse/expand, window resize, device rotation).
+  // Never upscale past 100% automatically.
+  useEffect(() => {
+    if (!autoFit) return;
+    const sc = scrollRef.current;
+    if (!sc) return;
+    const refit = () => {
+      const f = computeFit();
+      if (f != null) setZoom(clamp(Math.min(1, f)));
+    };
+    refit();
+    const ro = new ResizeObserver(refit);
+    ro.observe(sc);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFit, size.w]);
 
   // ctrl/cmd + wheel zoom (native listener — React's wheel handler is passive)
   useEffect(() => {
@@ -70,6 +98,7 @@ export default function ZoomPane({ children }) {
       e.preventDefault();
       const rect = sc.getBoundingClientRect();
       const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      setAutoFit(false);
       zoomTo(zoom * factor, e.clientX - rect.left, e.clientY - rect.top);
     };
     sc.addEventListener('wheel', onWheel, { passive: false });
@@ -80,16 +109,16 @@ export default function ZoomPane({ children }) {
     <div className="bey-zoom-wrap">
       {/* Controls live outside the bracket frame so they never cover slots */}
       <div className="bey-zoom-controls">
-        <button className="bey-zoom-btn" onClick={() => zoomTo(zoom - STEP)} title="縮小">−</button>
+        <button className="bey-zoom-btn" onClick={() => { setAutoFit(false); zoomTo(zoom - STEP); }} title="縮小">−</button>
         <span
           className="bey-zoom-label"
-          onClick={() => zoomTo(1)}
+          onClick={() => { setAutoFit(false); zoomTo(1); }}
           title="點擊恢復 100%"
         >
           {Math.round(zoom * 100)}%
         </span>
-        <button className="bey-zoom-btn" onClick={() => zoomTo(zoom + STEP)} title="放大">＋</button>
-        <button className="bey-zoom-btn bey-zoom-fit" onClick={fitWidth} title="縮放至容器寬度">適合寬度</button>
+        <button className="bey-zoom-btn" onClick={() => { setAutoFit(false); zoomTo(zoom + STEP); }} title="放大">＋</button>
+        <button className={`bey-zoom-btn bey-zoom-fit ${autoFit ? 'active' : ''}`} onClick={fitWidth} title="縮放至容器寬度並自動適配">適合寬度</button>
       </div>
       <div className="bey-bracket-container">
         <div className="bey-bracket-scroll" ref={scrollRef}>
