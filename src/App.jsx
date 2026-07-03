@@ -17,6 +17,39 @@ const IS_SPECTATOR = new URLSearchParams(window.location.search).has('spectate')
 const SWIPE_THRESHOLD = 50;   // min px to count as swipe
 const EDGE_ZONE = 30;         // px from left edge to start swipe
 
+// ── Join another tournament by room code ─────────────────────
+function JoinRoom() {
+  const [code, setCode] = useState('');
+  const canJoin = code.trim().length >= 4;
+
+  const join = () => {
+    if (!canJoin) return;
+    const c = code.trim().toUpperCase();
+    window.location.href = `${window.location.pathname}?spectate&room=${encodeURIComponent(c)}`;
+  };
+
+  return (
+    <div className="join-room-card">
+      <div className="join-room-title">📡 觀戰其他賽程</div>
+      <div className="join-room-row">
+        <input
+          className="join-room-input"
+          value={code}
+          maxLength={6}
+          onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+          onKeyDown={e => e.key === 'Enter' && join()}
+          placeholder="房間代碼"
+          aria-label="輸入房間代碼"
+        />
+        <button className="btn-primary join-room-btn" onClick={join} disabled={!canJoin}>
+          加入
+        </button>
+      </div>
+      <div className="join-room-hint">輸入主辦方分享的 6 位代碼，即時觀看該賽程</div>
+    </div>
+  );
+}
+
 // ── Tournament area (host mode) ───────────────────────────────
 function TournamentArea() {
   const { state } = useTournament();
@@ -35,6 +68,7 @@ function TournamentArea() {
           <span>🇨🇭 瑞士制</span>
           <span>🏟️ 多階段</span>
         </div>
+        <JoinRoom />
       </div>
     );
   }
