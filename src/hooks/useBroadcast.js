@@ -5,7 +5,7 @@
 //   Layer 3: Firebase RTDB     — cross-device, ~200ms (when configured)
 
 import { useEffect, useState, useRef } from 'react';
-import { ref, set, onValue, serverTimestamp } from 'firebase/database';
+import { ref, set, onValue, push, remove, onChildAdded } from 'firebase/database';
 import { db, firebaseReady } from '../lib/firebase';
 
 const CHANNEL_NAME = 'bb-bracket-live';
@@ -56,13 +56,36 @@ export function useBroadcastSend() {
     // so polling can't keep re-asserting stale local state
     try { localStorage.setItem(LS_KEY, JSON.stringify({ payload, roomCode, ts })); } catch (_) {}
 
-    // Layer 3: Firebase (cross-device)
+    // Layer 3: Firebase (cross-device) — state lives under /state so it
+    // never clobbers the judge command queue under /cmd
     if (firebaseReady && roomCode) {
-      const roomRef = ref(db, `${FB_ROOT}/${roomCode}`);
-      set(roomRef, { payload, ts }).catch(() => {});
+      const stateRef = ref(db, `${FB_ROOT}/${roomCode}/state`);
+      set(stateRef, { payload, ts }).catch(() => {});
     }
   };
   return send;
+}
+
+// ── JUDGE: push a score command to the host ───────────────────
+export function sendJudgeCommand(roomCode, matchId, s1, s2) {
+  if (!firebaseReady || !roomCode) return false;
+  const cmdRef = ref(db, `${FB_ROOT}/${roomCode}/cmd`);
+  push(cmdRef, { matchId, s1, s2, ts: Date.now() }).catch(() => {});
+  return true;
+}
+
+// ── HOST: apply judge commands, then remove them ──────────────
+export function listenJudgeCommands(roomCode, onCommand) {
+  if (!firebaseReady || !roomCode) return () => {};
+  const cmdRef = ref(db, `${FB_ROOT}/${roomCode}/cmd`);
+  return onChildAdded(cmdRef, (snap) => {
+    const cmd = snap.val();
+    try {
+      if (cmd) onCommand?.(cmd);
+    } finally {
+      remove(snap.ref).catch(() => {});
+    }
+  }, () => {});
 }
 
 // ── SPECTATOR: receive from all layers ────────────────────────
@@ -120,8 +143,8 @@ export function useBroadcastReceive(initialState, roomCode) {
     // Layer 3: Firebase (cross-device)
     let unsubscribeFirebase = null;
     if (firebaseReady && roomCode) {
-      const roomRef = ref(db, `${FB_ROOT}/${roomCode}`);
-      unsubscribeFirebase = onValue(roomRef, (snapshot) => {
+      const stateNodeRef = ref(db, `${FB_ROOT}/${roomCode}/state`);
+      unsubscribeFirebase = onValue(stateNodeRef, (snapshot) => {
         const data = snapshot.val();
         if (data?.payload) handle(data.payload, data.ts ?? Date.now());
       }, () => {

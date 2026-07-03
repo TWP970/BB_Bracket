@@ -1,18 +1,17 @@
 // components/shared/ScoreCounter.jsx
-// BEYBLADE X style score counter.
-// Pick a match, tap finish buttons to add points; first to 4 wins,
-// the result is recorded and the winner advances automatically.
-// After a match ends the counter lets you pick the next one.
+// BEYBLADE X style score counter panel (used by the judge page).
+// Pick a match, tap finish buttons to add points; first to 4 wins and the
+// score is sent via onScore(matchId, s1, s2). After a match ends the
+// counter lets you pick the next one.
 import { useState, useMemo } from 'react';
-import { useTournament } from '../../context/TournamentContext';
 
 const TARGET = 4; // first to 4 points wins (BEYBLADE X rule)
 
 const FINISHES = [
-  { pts: 1, label: '旋轉', en: 'SPIN' },
-  { pts: 2, label: '場外', en: 'OVER' },
-  { pts: 2, label: '爆裂', en: 'BURST' },
-  { pts: 3, label: '極限', en: 'XTREME' },
+  { pts: 1, label: '旋轉' },
+  { pts: 2, label: '場外' },
+  { pts: 2, label: '爆裂' },
+  { pts: 3, label: '極限' },
 ];
 
 // Collect scoreable matches + the entry-number map (same numbering as
@@ -51,10 +50,7 @@ function matchLabel(m, numberOf) {
   return `${part}${tag}${n(m.player1)}${m.player1.name} vs ${n(m.player2)}${m.player2.name}`;
 }
 
-export default function ScoreCounter({ onClose }) {
-  const { state, submitScore } = useTournament();
-  const tournament = state.tournament;
-
+export default function ScoreCounterPanel({ tournament, onScore, resultNote = null }) {
   const { matches, numberOf } = useMemo(() => getScoreboard(tournament), [tournament]);
 
   // Snapshot of the selected pairing — the live match object disappears
@@ -81,7 +77,7 @@ export default function ScoreCounter({ onClose }) {
     if (n1 >= TARGET || n2 >= TARGET) {
       const winner = n1 >= TARGET ? game.player1 : game.player2;
       setResult({ winner, s1: n1, s2: n2 });
-      submitScore(game.matchId, n1, n2);
+      onScore?.(game.matchId, n1, n2);
     }
   };
 
@@ -120,58 +116,50 @@ export default function ScoreCounter({ onClose }) {
   );
 
   return (
-    <div className="share-overlay" onClick={onClose}>
-      <div className="counter-modal" onClick={e => e.stopPropagation()}>
+    <div className="counter-panel">
+      {/* Match selector */}
+      <select
+        className="sidebar-select counter-select"
+        value={game?.matchId ?? ''}
+        onChange={e => pickMatch(e.target.value)}
+      >
+        <option value="">— 選擇對戰組合 —</option>
+        {matches.map(m => (
+          <option key={m.id} value={m.id}>{matchLabel(m, numberOf)}</option>
+        ))}
+      </select>
 
-        <div className="share-header">
-          <span className="share-title">🎯 分數計數器</span>
-          <button className="share-close" onClick={onClose}>✕</button>
+      {!game && (
+        <div className="counter-empty">
+          {matches.length === 0
+            ? '目前沒有可計分的對戰（僅淘汰賽制支援，且雙方選手須到位）'
+            : '請先選擇一場對戰'}
         </div>
+      )}
 
-        {/* Match selector */}
-        <select
-          className="sidebar-select counter-select"
-          value={game?.matchId ?? ''}
-          onChange={e => pickMatch(e.target.value)}
-        >
-          <option value="">— 選擇對戰組合 —</option>
-          {matches.map(m => (
-            <option key={m.id} value={m.id}>{matchLabel(m, numberOf)}</option>
-          ))}
-        </select>
-
-        {!game && (
-          <div className="counter-empty">
-            {matches.length === 0
-              ? '目前沒有可計分的對戰（僅淘汰賽制支援，且雙方選手須到位）'
-              : '請先選擇一場對戰'}
+      {game && (
+        <>
+          <div className="counter-arena">
+            {renderSide(game.player1, s1, 1)}
+            <div className="counter-vs">VS</div>
+            {renderSide(game.player2, s2, 2)}
           </div>
-        )}
 
-        {game && (
-          <>
-            <div className="counter-arena">
-              {renderSide(game.player1, s1, 1)}
-              <div className="counter-vs">VS</div>
-              {renderSide(game.player2, s2, 2)}
-            </div>
-
-            {result ? (
-              <div className="counter-result">
-                <div className="counter-result-text">
-                  🏆 <strong>{result.winner.name}</strong> 以 {Math.max(result.s1, result.s2)} : {Math.min(result.s1, result.s2)} 獲勝，已自動晉級！
-                </div>
-                <button className="btn-primary counter-next-btn" onClick={() => pickMatch('')}>
-                  ⚡ 選擇下一場對戰
-                </button>
+          {result ? (
+            <div className="counter-result">
+              <div className="counter-result-text">
+                🏆 <strong>{result.winner.name}</strong> 以 {Math.max(result.s1, result.s2)} : {Math.min(result.s1, result.s2)} 獲勝！
+                {resultNote && <div className="counter-result-note">{resultNote}</div>}
               </div>
-            ) : (
-              <div className="counter-hint">先取得 {TARGET} 分者獲勝並自動晉級</div>
-            )}
-          </>
-        )}
-
-      </div>
+              <button className="btn-primary counter-next-btn" onClick={() => pickMatch('')}>
+                ⚡ 選擇下一場對戰
+              </button>
+            </div>
+          ) : (
+            <div className="counter-hint">先取得 {TARGET} 分者獲勝並自動晉級</div>
+          )}
+        </>
+      )}
     </div>
   );
 }

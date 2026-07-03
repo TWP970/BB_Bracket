@@ -8,11 +8,14 @@ import SwissView from './components/Swiss/SwissView';
 import MultiStageView from './components/MultiStage/MultiStageView';
 import SpectatorView from './components/Spectator/SpectatorView';
 import ShareModal from './components/shared/ShareModal';
-import ScoreCounter from './components/shared/ScoreCounter';
+import JudgeView from './components/Judge/JudgeView';
+import JudgeQRModal from './components/Judge/JudgeQRModal';
 import Toast from './components/shared/Toast';
 
-// ── Detect spectator mode via URL ────────────────────────────
-const IS_SPECTATOR = new URLSearchParams(window.location.search).has('spectate');
+// ── Detect spectator / judge mode via URL ────────────────────
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const IS_SPECTATOR = URL_PARAMS.has('spectate');
+const IS_JUDGE = URL_PARAMS.has('judge');
 
 // ── Swipe gesture config ─────────────────────────────────────
 const SWIPE_THRESHOLD = 50;   // min px to count as swipe
@@ -149,6 +152,11 @@ export default function App() {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
+  // ── Judge mode (QR entrance) ────────────────────────────────
+  if (IS_JUDGE) {
+    return <JudgeView />;
+  }
+
   // ── Spectator mode ──────────────────────────────────────────
   if (IS_SPECTATOR) {
     return <SpectatorView />;
@@ -185,9 +193,9 @@ export default function App() {
             <button
               className="share-btn-header"
               onClick={() => setShowCounter(true)}
-              title="開啟分數計數器"
+              title="顯示裁判入口 QR Code"
             >
-              🎯 計分器
+              🎯 裁判入口
             </button>
             <button
               className="share-btn-header"
@@ -219,7 +227,7 @@ export default function App() {
         />
       )}
       {showCounter && (
-        <ScoreCounter onClose={() => setShowCounter(false)} />
+        <JudgeQRModal onClose={() => setShowCounter(false)} />
       )}
     </div>
   );

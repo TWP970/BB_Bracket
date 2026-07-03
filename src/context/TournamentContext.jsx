@@ -9,7 +9,7 @@ import {
   recordMultiStageKnockoutResult, advanceSwissRoundInGroup
 } from '../lib/multistage';
 import { distributeToGroups } from '../lib/utils';
-import { useBroadcastSend, getOrCreateRoomCode } from '../hooks/useBroadcast';
+import { useBroadcastSend, getOrCreateRoomCode, listenJudgeCommands } from '../hooks/useBroadcast';
 
 const TournamentContext = createContext(null);
 
@@ -61,6 +61,11 @@ export function TournamentProvider({ children }) {
   useEffect(() => {
     broadcast(state.tournament, roomCode);
   }, [state.tournament]);
+
+  // Latest state/submitScore for the judge-command listener (it outlives renders)
+  const stateRef = useRef(state);
+  const submitScoreRef = useRef(null);
+  useEffect(() => { stateRef.current = state; });
 
   const generate = useCallback((playersOverride, formatOverride) => {
     const players = playersOverride ?? state.players;
@@ -275,6 +280,26 @@ export function TournamentProvider({ children }) {
     undoStack.current = [];
     dispatch({ type: 'RESET' });
   }, []);
+
+  // Keep the ref pointing at the latest submitScore
+  useEffect(() => { submitScoreRef.current = submitScore; });
+
+  // Apply score commands pushed by judge devices (QR entrance)
+  const hasTournament = !!state.tournament;
+  useEffect(() => {
+    if (!hasTournament) return;
+    return listenJudgeCommands(roomCode, ({ matchId, s1, s2 }) => {
+      const cur = stateRef.current.tournament;
+      if (!cur || typeof matchId !== 'string') return;
+      if (typeof s1 !== 'number' || typeof s2 !== 'number' || s1 === s2 || s1 < 0 || s2 < 0) return;
+      const ko = cur.type === 'multistage' ? cur.knockoutTournament : cur;
+      const m = ko?.matches?.[matchId];
+      // Only apply to a live, ready match — ignore stale/duplicate commands
+      if (!m || m.isCompleted || m.isBye || m.locked) return;
+      if (!m.player1 || !m.player2 || m.player1.isBye || m.player2.isBye) return;
+      submitScoreRef.current?.(matchId, s1, s2);
+    });
+  }, [hasTournament, roomCode]);
 
   return (
     <TournamentContext.Provider value={{

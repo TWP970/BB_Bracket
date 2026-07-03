@@ -484,18 +484,24 @@ input, textarea, select { outline: none; }
 .share-row { display: flex; gap: 8px; align-items: center; }
 .share-row .btn-primary { flex: 1; }
 
-/* ── Score Counter ── */
+/* ── Score Counter (judge page panel) ── */
 .header-actions { display: flex; gap: 8px; }
-.counter-modal {
+.counter-panel {
   background: var(--glass-strong);
   -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg); padding: 20px;
-  width: 720px; max-width: 96vw;
-  max-height: 92vh; overflow-y: auto;
-  box-shadow: 0 24px 64px rgba(45,62,110,0.30), var(--inset-hi);
-  animation: pop-in 0.2s ease;
+  width: 100%;
+  box-shadow: var(--shadow), var(--inset-hi);
   display: flex; flex-direction: column; gap: 14px;
+}
+.judge-body {
+  display: flex; justify-content: center; align-items: flex-start;
+}
+.judge-panel-wrap { width: 720px; max-width: 100%; }
+.judge-qr-img { width: 220px; height: 220px; }
+.counter-result-note {
+  font-size: 12px; font-weight: 700; color: var(--green); margin-top: 4px;
 }
 .counter-select { width: 100%; font-size: 14px; padding: 10px 12px; }
 .counter-empty {
@@ -589,7 +595,7 @@ input, textarea, select { outline: none; }
   .counter-score { font-size: 44px; }
   .counter-name { font-size: 13px; }
   .counter-btn { font-size: 14px; padding: 6px 2px; }
-  .counter-modal { padding: 14px; }
+  .counter-panel { padding: 14px; }
 }
 
 /* ── Room code box ── */
