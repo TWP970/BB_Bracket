@@ -66,7 +66,7 @@ export default function ShareModal({ tournament, onClose }) {
         <div className="share-option">
           <div className="share-option-label">
             <span className="share-badge remote">跨裝置</span>
-            {fbReady ? '透過 Firebase 即時同步' : '⚠️ 需設定 Firebase（見下方說明）'}
+            {fbReady ? '透過雲端即時同步' : '⚠️ 需設定雲端同步（見下方說明）'}
           </div>
           {fbReady ? (
             <>
@@ -82,8 +82,8 @@ export default function ShareModal({ tournament, onClose }) {
             </>
           ) : (
             <div className="share-warn">
-              Firebase 尚未設定。請複製 <code>.env.example</code> 為 <code>.env.local</code>，
-              填入 Firebase 憑證後重啟伺服器即可啟用跨裝置即時同步。
+              雲端同步尚未設定。請複製 <code>.env.example</code> 為 <code>.env.local</code>，
+              填入憑證後重啟伺服器即可啟用跨裝置即時同步。
             </div>
           )}
         </div>
